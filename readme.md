@@ -11,5 +11,9 @@ anywhere on server, desktop, and browser.
 
 Console.log('Hello, world!')
 ; Which is the same
-Stream.write(Process.stdout 'Hello, world\n')
+Stream.write(Process.stdout 'Hello, world!\n')
 ```
+
+## License
+
+MIT © [Rumkin](https://rumk.in)
