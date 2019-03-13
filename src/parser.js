@@ -58,9 +58,7 @@ function parse(state, tokens) {
 
         token = tokens[current+=2];
         while (token.type !== 'paren' || token.value !== ')') {
-          node.params.push(
-            walk()
-          );
+          node.params.push(walk());
           token = tokens[current];
           if (! token) {
             throw new Error('Unexpected end of tokens');
@@ -82,7 +80,7 @@ function parse(state, tokens) {
     }
     else if (token.type === 'paren') {
       if (token.value !== '(') {
-        throw new TypeError(`Unexpected closing parenthesis`);
+        throw new TypeError(`Unexpected closing parenthesis at ${getLocation(token)}`);
       }
 
       if (! hasNext()) {
@@ -114,7 +112,7 @@ function parse(state, tokens) {
       return node;
     }
     else {
-      throw TypeError(`Unexpected token type "${token.type}"`);
+      throw TypeError(`Unexpected token type "${token.type}" at ${getLocation(token)}`);
     }
   };
 
@@ -123,6 +121,10 @@ function parse(state, tokens) {
   }
 
   return state;
+}
+
+function getLocation({location}) {
+  return `${location.start.line}:${location.start.pos}`;
 }
 
 exports.parse = parse;

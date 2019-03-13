@@ -11,21 +11,39 @@ function transform(ast, visitor) {
   return newAst;
 }
 
+class Visitor {
+  constructor(parent, path, replaceWith, setModifier) {
+    this.parent = parent;
+    this.path = path;
+    this.replaceWith = replaceWith;
+    this.setModifier = setModifier;
+  }
+}
+
+class Context {
+  constructor(parent, path, result, addChildren) {
+    this.parent = parent;
+    this.path = path;
+    this.result = result;
+    this.addChildren = addChildren;
+  }
+}
+
 function transformNode(node, ctx, visitor) {
   let result;
   let addChildren;
 
   if (node.type in visitor) {
-    visitor[node.type]({
-      parent: ctx.parent,
-      path: ctx.path,
-      replaceWith(newNode) {
+    visitor[node.type](new Visitor(
+      ctx.parent,
+      ctx.path,
+      (newNode) => {
         result = newNode;
       },
-      setModifier(newModifer) {
+      (newModifier) => {
         addChildren = newModifier;
       },
-    }, node);
+    ), node);
   }
   else if (isContainerNode(node)) {
     addChildren = getModifierByType(node.type);
@@ -36,32 +54,29 @@ function transformNode(node, ctx, visitor) {
   }
 
   if (isContainerNode(node) && addChildren) {
-    const nextCtx = {
-      parent: node,
-      path: [...ctx.path, node.type],
+    const nextCtx = new Context(
+      node,
+      [...ctx.path, node.type],
       result,
       addChildren,
-    };
+    );
 
     switch (node.type) {
-      case 'Program': {
-        node.body.forEach(
-          (childNode) => transformNode(childNode, nextCtx, visitor)
-        );
-        break;
-      }
-      case 'CallExpression': {
-        node.params.forEach(
-          (childNode) => transformNode(childNode, nextCtx, visitor)
-        );
-        break;
-      }
-      case 'ListExpression': {
-        node.elements.forEach(
-          (childNode) => transformNode(childNode, nextCtx, visitor)
-        );
-        break;
-      }
+    case 'Program':
+      node.body.forEach(
+        (childNode) => transformNode(childNode, nextCtx, visitor)
+      );
+      break;
+    case 'CallExpression':
+      node.params.forEach(
+        (childNode) => transformNode(childNode, nextCtx, visitor)
+      );
+      break;
+    case 'ListExpression':
+      node.elements.forEach(
+        (childNode) => transformNode(childNode, nextCtx, visitor)
+      );
+      break;
     }
   }
 
@@ -108,14 +123,14 @@ function copyNode(origin) {
   const node = {...origin};
 
   switch (node.type) {
-    case 'CallExpression':
-      node.params = [];
+  case 'CallExpression':
+    node.params = [];
     break;
-    case 'ListExpression':
-      node.elements = [];
+  case 'ListExpression':
+    node.elements = [];
     break;
-    case 'Program':
-      node.body = [];
+  case 'Program':
+    node.body = [];
     break;
   }
 
