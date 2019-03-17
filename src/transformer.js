@@ -30,7 +30,7 @@ class Context {
 }
 
 function transformNode(node, ctx, visitor) {
-  let result;
+  let replacement;
   let addChildren;
 
   if (node.type in visitor) {
@@ -38,7 +38,7 @@ function transformNode(node, ctx, visitor) {
       ctx.parent,
       ctx.path,
       (newNode) => {
-        result = newNode;
+        replacement = newNode;
       },
       (newModifier) => {
         addChildren = newModifier;
@@ -49,15 +49,15 @@ function transformNode(node, ctx, visitor) {
     addChildren = getModifierByType(node.type);
   }
 
-  if (! result) {
-    result = copyNode(node);
+  if (! replacement) {
+    replacement = node.clone();
   }
 
   if (isContainerNode(node) && addChildren) {
     const nextCtx = new Context(
       node,
       [...ctx.path, node.type],
-      result,
+      replacement,
       addChildren,
     );
 
@@ -82,7 +82,7 @@ function transformNode(node, ctx, visitor) {
 
   ctx.addChildren(
     ctx.result,
-    Array.isArray(result) ? result : [result]
+    Array.isArray(replacement) ? replacement : [replacement]
   );
 }
 
@@ -117,24 +117,6 @@ function isContainerNode(node) {
     'CallExpression',
     'ListExpression',
   ].includes(node.type);
-}
-
-function copyNode(origin) {
-  const node = {...origin};
-
-  switch (node.type) {
-  case 'CallExpression':
-    node.params = [];
-    break;
-  case 'ListExpression':
-    node.elements = [];
-    break;
-  case 'Program':
-    node.body = [];
-    break;
-  }
-
-  return node;
 }
 
 exports.transform = transform;

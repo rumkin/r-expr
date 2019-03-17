@@ -1,15 +1,105 @@
-function createParserState(ast = createAst()) {
+function createParserState(ast = new Program()) {
   return {
     ast,
     // current,
   };
 }
 
-function createAst() {
-  return {
-    type: 'Program',
-    body: [],
-  };
+class AstNode {
+  constructor(type) {
+    this.type = type;
+  }
+
+  clone() {
+    throw new Error('Clone is not implemented yet');
+  }
+}
+
+class Program extends AstNode {
+  constructor(body = []) {
+    super('Program');
+
+    this.body = body;
+  }
+
+  clone() {
+    return new this.constructor(
+      this.body.map((node) => node.clone())
+    );
+  }
+}
+
+class Comment extends AstNode {
+  constructor(text, location) {
+    super('Comment');
+
+    this.text = text;
+    this.location = location;
+  }
+
+  clone() {
+    return new this.constructor(this.text, this.location);
+  }
+}
+
+class StringLiteral extends AstNode {
+  constructor(value, location) {
+    super('StringLiteral');
+
+    this.value = value;
+    this.location = location;
+  }
+
+  clone() {
+    return new this.constructor(this.value, this.location);
+  }
+}
+
+class SymbolLiteral extends AstNode {
+  constructor(value, location) {
+    super('SymbolLiteral');
+
+    this.value = value;
+    this.location = location;
+  }
+
+  clone() {
+    return new this.constructor(this.value, this.location);
+  }
+}
+
+class CallExpression extends AstNode {
+  constructor(callee, params, location) {
+    super('CallExpression');
+
+    this.callee = callee;
+    this.params = params || [];
+    this.location = location;
+  }
+
+  clone() {
+    return new this.constructor(
+      this.callee.clone(),
+      this.params.map((node) => node.clone()),
+      this.location
+    );
+  }
+}
+
+class ListExpression extends AstNode {
+  constructor(elements, location) {
+    super('ListExpression');
+
+    this.elements = elements || [];
+    this.location = location;
+  }
+
+  clone() {
+    return new this.constructor(
+      this.elements.map((node) => node.clone()),
+      this.location
+    );
+  }
 }
 
 function parse(state, tokens) {
@@ -28,33 +118,18 @@ function parse(state, tokens) {
     if (token.type === 'comment') {
       current +=1;
 
-      return {
-        type: 'Comment',
-        text: token.value,
-        location: token.location,
-      };
+      return new Comment(token.value, token.location);
     }
     else if (token.type === 'string') {
       current += 1;
 
-      return {
-        type: 'StringLiteral',
-        value: token.value,
-        location: token.location,
-      };
+      return new StringLiteral(token.value, token.location);
     }
     else if (token.type === 'symbol') {
       if (hasNext() && nextIs('paren') && nextValue('(') && areNeibours(token, getNext())) {
-        const node = {
-          type: 'CallExpression',
-          name: token.value,
-          params: [],
-          location: {
-            start: {
-              ...token.location.start,
-            },
-          },
-        };
+        const node = new CallExpression(new SymbolLiteral(token.value, token.location), [], {
+          start: {...token.location.start},
+        });
 
         token = tokens[current+=2];
         while (token.type !== 'paren' || token.value !== ')') {
@@ -71,11 +146,7 @@ function parse(state, tokens) {
       else {
         ++current;
 
-        return {
-          type: 'SymbolLiteral',
-          value: token.value,
-          location: token.location,
-        };
+        return new SymbolLiteral(token.value, token.location);
       }
     }
     else if (token.type === 'paren') {
@@ -87,16 +158,11 @@ function parse(state, tokens) {
         throw new TypeError('Unexpected end of input');
       }
 
-      const node = {
-        type: 'ListExpression',
-        location: token.location,
-        elements: [],
-        location: {
-          start: {
-            ...token.location.start,
-          },
+      const node = new ListExpression([], {
+        start: {
+          ...token.location.start,
         },
-      };
+      });
       token = tokens[current += 1];
       while (token.type !== 'paren' || token.value !== ')') {
         node.elements.push(

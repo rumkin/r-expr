@@ -46,7 +46,16 @@ class Token {
   constructor(type, value, start, end) {
     this.type = type;
     this.value = value;
-    this.location = {start, end};
+    this.location = new Location(start, end);
+  }
+}
+
+class Location {
+  constructor(start, end) {
+    this.start = Object.freeze(start);
+    this.end = Object.freeze(end);
+
+    Object.freeze(this);
   }
 }
 
@@ -98,7 +107,7 @@ function tokenize(state, str, isLast = true) {
     }
     else {
       const index = getIndex();
-      let end = {index: index + value.length};
+      const end = {index: index + value.length};
       if (value === NL) {
         end.line = line + 1;
         end.pos = 1;
