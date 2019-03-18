@@ -3,7 +3,7 @@
 R-expressions or Rich Expressions is a markup language inspired by S-
 and M-expressions. It's toolkit written with JavaScript. Toolkit contains tokenizer, parser, traverser, and transformer. Tokenizer and parser support streaming mode and could be used for REPL creation.
 
-## Goal
+## Goals
 
 R-expressions are made for:
 1. Lisp-like programming languages creation.
@@ -25,7 +25,8 @@ R-Expressions contains symbols, strings, lists, calls and comments.
 
 ### Symbol
 
-Symbol is a sequence of characters without whitespaces, single quotes or parenthesis. While whitespace could be escaped by backslash.
+Symbol is a sequence of characters without whitespaces, single quotes or parenthesis.
+While whitespace, semicolon, quote or open parenthesis could be escaped by backslash.
 
 These are all symbols:
 ```

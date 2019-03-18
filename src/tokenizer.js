@@ -49,6 +49,18 @@ function isWhiteSpace(char) {
   return char === NL || char === SPACE;
 }
 
+function unescapeSymbol(char) {
+  switch (char) {
+  case OPEN_PAREN:
+  case COMMENT_START:
+  case SPACE:
+  case STRING_START:
+  case ESCAPE_START:
+    return char;
+  default: null;
+  }
+}
+
 function unescape(v) {
   switch (v) {
   case 'n': return '\n';
@@ -175,13 +187,13 @@ function tokenize(state, str, isLast = true) {
         switch (substate.type) {
         case T_SYMBOL: {
           if (substate.hasSequence) {
-            if (char === SPACE) {
-              substate.hasSequence = false;
-              substate.value += ' ';
-            }
-            else {
+            const unescaped = unescapeSymbol(char);
+            if (unescaped === null) {
               throw new Error(`Unexpected escape sequence "\\${char}"`);
             }
+
+            substate.hasSequence = false;
+            substate.value += ' ';
           }
           else if (NON_SYMBOL.includes(char)) {
             endState();
