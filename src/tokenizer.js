@@ -1,4 +1,6 @@
-function createTokenizerState({offset={line:1, pos:1}} = {}) {
+const {Token} = require('./types');
+
+function createTokenizerState({offset={line:1, pos:0}} = {}) {
   return {
     line: offset.line,
     pos: offset.pos,
@@ -14,6 +16,7 @@ function createSubState({type, value = '', start: {index, line, pos}}) {
     value,
     hasSequence: false,
     sequence: '',
+    charsEaten: 0,
     start: {index, line, pos},
   };
 }
@@ -41,23 +44,6 @@ const NON_SYMBOL = [
   EOF,
 ];
 const ESCAPE_START = '\\';
-
-class Token {
-  constructor(type, value, start, end) {
-    this.type = type;
-    this.value = value;
-    this.location = new Location(start, end);
-  }
-}
-
-class Location {
-  constructor(start, end) {
-    this.start = Object.freeze(start);
-    this.end = Object.freeze(end);
-
-    Object.freeze(this);
-  }
-}
 
 function isWhiteSpace(char) {
   return char === NL || char === SPACE;
@@ -99,7 +85,7 @@ function tokenize(state, str, isLast = true) {
         value,
         substate.start,
         {
-          index: getIndex(),
+          index: substate.start.index + (substate.charsEaten || value.length),
           line,
           pos,
         },
@@ -148,7 +134,7 @@ function tokenize(state, str, isLast = true) {
 
     if (needIncrease) {
       line += 1;
-      pos = 1;
+      pos = 0;
       needIncrease = false;
     }
     else {
@@ -178,6 +164,7 @@ function tokenize(state, str, isLast = true) {
         }
         else if (char === STRING_START) {
           startState(T_STRING);
+          substate.charsEaten = 1;
         }
         else if (! isWhiteSpace(char)) {
           startState(T_SYMBOL, char);
@@ -198,6 +185,7 @@ function tokenize(state, str, isLast = true) {
           }
           else if (NON_SYMBOL.includes(char)) {
             endState();
+            // TODO Replace with stepback
             continue charLoop;
           }
           else if (char === ESCAPE_START) {
@@ -214,16 +202,23 @@ function tokenize(state, str, isLast = true) {
             if (value === null) {
               throw new Error(`Unknown escape sequence "\\${char}"`);
             }
+            substate.charsEaten += 1;
             substate.value += value;
             substate.hasSequence = false;
           }
-          else if (char === '\'' || char === EOF) {
+          else if (char === '\'') {
+            substate.charsEaten += 1;
+            endState();
+          }
+          else if (char === EOF) {
             endState();
           }
           else if (char === '\\') {
+            substate.charsEaten += 1;
             substate.hasSequence = true;
           }
           else {
+            substate.charsEaten += 1;
             substate.value += char;
           }
           continue scanLoop;
