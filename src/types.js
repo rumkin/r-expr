@@ -106,8 +106,8 @@ class Token {
 
 class Location {
   constructor(start, end) {
-    this.start = new Coordinate(start.line, start.pos, start.index);
-    this.end = new Coordinate(end.line, end.pos, end.index);
+    this.start = new Cursor(start.line, start.pos, start.index);
+    this.end = new Cursor(end.line, end.pos, end.index);
 
     Object.freeze(this);
   }
@@ -121,7 +121,7 @@ class Location {
   }
 }
 
-class Coordinate {
+class Cursor {
   constructor(line, pos, index) {
     this.line = line;
     this.pos = pos;
@@ -143,4 +143,4 @@ exports.CallExpression = CallExpression;
 exports.ListExpression = ListExpression;
 exports.Token = Token;
 exports.Location = Location;
-exports.Coordinate = Coordinate;
+exports.Cursor = Cursor;
