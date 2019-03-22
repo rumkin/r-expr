@@ -3,11 +3,13 @@
 R-expressions or Rich Expressions is a markup language inspired by S-
 and M-expressions. It's toolkit written with JavaScript. Toolkit contains tokenizer, parser, traverser, and transformer. Tokenizer and parser support streaming mode and could be used for REPL creation.
 
-## Goals
+## Application
 
-R-expressions are made for:
+R-expressions could be used for:
+
 1. Lisp-like programming languages creation.
 2. Language prototyping.
+3. Transpiler creation.
 
 ## Example
 
