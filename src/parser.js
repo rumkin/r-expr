@@ -100,7 +100,6 @@ function parseStream(state, newTokens) {
     case 'symbol': {
       if (hasPrevToken()) {
         const prev = getPrevToken();
-        console.log('symbol', token, prev);
 
         if (
           isNeighbours(prev, token) &&
