@@ -1,7 +1,15 @@
 # R-Expressions
 
 R-expressions or Rich Expressions is a markup language inspired by S-
-and M-expressions. It's toolkit written with JavaScript. Toolkit contains tokenizer, parser, traverser, and transformer. Tokenizer and parser support streaming mode and could be used for REPL creation.
+and M-expressions. It's toolkit written with JavaScript. Toolkit contains:
+
+* ✅ Tokenizer,
+* ✅ Parser,
+* ✅ Tree traverser,
+* ✅ Tree transformer.
+
+Tokenizer and parser support streaming mode with byte-per-byte input and could
+be used for REPL creation.
 
 ## Application
 
@@ -16,7 +24,7 @@ R-expressions could be used for:
 ```
 (pseudo-lang ^1.0)
 
-import((Console) from io)
+import({Console} from Core.Io)
 
 Console.log('Hello, %s!' 'World')
 ```
@@ -56,11 +64,27 @@ String is value surrounded by single quotes `'`. Single quote within a string sh
 List is a type which can contain other types symbols, strings, lists, and calls:
 
 R-expressions has three types of lists round, square, and figure, this lists
-are enclosed with round, square, or figure parenthesis respectively.
+are enclosed with round, square, or figure parenthesis respectively. They can be used to separate semantic.
 
 ```
+; Tuple
 (null true 1_234 'Hello')
+
+; Object
+{ x: 1 y: 2 z: 3 }
+
+; Array
+[ 1 2 3 4 5 ]
+
+; Mixed
+[ (1 2 {a}) ]
+
+; Empty
+()
 ```
+
+> ⚠️ There should be a space between the closing parenthesis of
+> a list and the opening of a following one. While this code `{} {}` is correct, the next one `{}{}` is not. Look at [Call](#call) type.
 
 ### Call
 
@@ -78,10 +102,11 @@ curry(print 'Hello, %s')('World')
 print('Hello, %s' ?)('World')
 ```
 
-Lists could be mixed:
+Lists types could be mixed for different semantics creation:
 ```
+; HTML like code
 div{class: ('badge' 'badge-round' 'badge-red')}(
-  p('Users count: ' 1)
+  p('Users count: 1')
 )
 ```
 
