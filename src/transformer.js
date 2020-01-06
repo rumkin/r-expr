@@ -1,121 +1,146 @@
+const {
+  Program,
+  CallExpression,
+} = require('./types');
+
 function transform(ast, visitor) {
-  let newAst;
-  transformNode(ast, {
+  return transformNode(ast, {
     parent: null,
     path: [],
-    addChildren(node, [result]) {
-      newAst = result;
-    },
   }, visitor);
-
-  return newAst;
 }
 
 class Visitor {
-  constructor(parent, path, replaceWith, setModifier) {
+  constructor(parent, path, replaceWith) {
     this.parent = parent;
     this.path = path;
     this.replaceWith = replaceWith;
-    this.setModifier = setModifier;
   }
 }
 
 class Context {
-  constructor(parent, path, result, addChildren) {
+  constructor(parent, path) {
     this.parent = parent;
     this.path = path;
-    this.result = result;
-    this.addChildren = addChildren;
   }
 }
 
 function transformNode(node, ctx, visitor) {
-  let replacement;
-  let addChildren;
+  let transformChildren = true;
 
   if (node.type in visitor) {
     visitor[node.type](new Visitor(
       ctx.parent,
       ctx.path,
-      (newNode) => {
-        replacement = newNode;
-      },
-      (newModifier) => {
-        addChildren = newModifier;
+      (newNode, stop = false) => {
+        node = newNode;
+        ctx = new Context(
+          ctx.parent,
+          [...ctx.path.slice(0, -1), node.type],
+        );
+
+        if (stop) {
+          transformChildren = false;
+        }
       },
     ), node);
   }
-  else if (isContainerNode(node)) {
-    addChildren = getModifierByType(node.type);
+
+  if (isContainerNode(node) && transformChildren) {
+    return transformChildNodes(node, ctx, visitor);
   }
-
-  if (! replacement) {
-    replacement = node.clone();
+  else {
+    return node;
   }
+}
 
-  if (isContainerNode(node) && addChildren) {
-    const nextCtx = new Context(
-      node,
-      [...ctx.path, node.type],
-      replacement,
-      addChildren,
-    );
+function transformChildNodes(node, ctx, visitor) {
+  switch (node.type) {
+  case 'Program': {
+    const children = traverseChildren(node, node.body, ctx, visitor);
 
-    switch (node.type) {
-    case 'Program':
-      node.body.forEach(
-        (childNode) => transformNode(childNode, nextCtx, visitor)
-      );
-      break;
-    case 'CallExpression':
-      node.params.forEach(
-        (childNode) => transformNode(childNode, nextCtx, visitor)
-      );
-      break;
-    case 'ListExpression':
-      node.elements.forEach(
-        (childNode) => transformNode(childNode, nextCtx, visitor)
-      );
-      break;
+    if (node.body !== children) {
+      return new Program(children);
     }
+    break;
+  }
+  case 'CallExpression': {
+    const children = traverseChildren(node.list, node.list.items, new Context(node.list), visitor);
+
+    if (node.list.items !== children) {
+      return new CallExpression(
+        node.callee,
+        new node.list.constructor(children, node.list.loc),
+        node.loc,
+      );
+    }
+    break;
+  }
+  case 'RoundListExpression':
+  case 'SquareListExpression':
+  case 'FigureListExpression': {
+    const children = traverseChildren(node, node.items, ctx, visitor);
+
+    if (node.items !== children) {
+      return new node.constructor(children, node.loc);
+    }
+    break;
+  }
   }
 
-  ctx.addChildren(
-    ctx.result,
-    Array.isArray(replacement) ? replacement : [replacement]
+  return node;
+}
+
+function traverseChildren(node, children, ctx, visitor) {
+  const newChildren = new Array(children.length);
+  let hasChanges = false;
+
+  children.forEach(
+    (childNode, i) => {
+      const newNode = transformNode(childNode, new Context(node, [...ctx.path, childNode.type]), visitor);
+      if (newNode !== childNode) {
+        hasChanges = true;
+      }
+      newChildren[i] = newNode;
+    }
   );
+  return hasChanges ? newChildren : children;
 }
 
-function programModifier(node, children) {
-  node.body.push(...children);
-}
+// function programModifier(node, children) {
+//   node.body.push(...children);
+// }
+//
+// function callModifier(node, children) {
+//   node.list.items.push(...children);
+// }
+//
+// function listModifier(node, children) {
+//   node.items.push(...children);
+// }
 
-function callModifier(node, children) {
-  node.params.push(...children);
-}
-
-function listModifier(node, children) {
-  node.elements.push(...children);
-}
-
-function getModifierByType(type) {
-  switch (type) {
-  case 'Program':
-    return programModifier;
-  case 'CallExpression':
-    return callModifier;
-  case 'ListExpression':
-    return listModifier;
-  default:
-    throw new Error(`Modifier for type "${type}" not defined`);
-  }
-}
+// function getModifierByType(type) {
+//   switch (type) {
+//   case 'Program':
+//     return programModifier;
+//   case 'CallExpression':
+//     return callModifier;
+//   case 'RoundListExpression':
+//   case 'SquareListExpression':
+//   case 'FigureListExpression':
+//     return listModifier;
+//   default:
+//     throw new Error(`Modifier for type "${type}" not defined`);
+//   }
+// }
 
 function isContainerNode(node) {
   return [
     'Program',
     'CallExpression',
-    'ListExpression',
+    'RoundListExpression',
+    'SquareListExpression',
+    'FigureListExpression',
   ].includes(node.type);
 }
 

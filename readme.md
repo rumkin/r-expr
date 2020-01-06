@@ -51,22 +51,20 @@ String is value surrounded by single quotes `'`. Single quote within a string sh
 'Hello! I\'m a string too.'
 ```
 
-### List
+### Lists
 
 List is a type which can contain other types symbols, strings, lists, and calls:
 
+R-expressions has three types of lists round, square, and figure, this lists
+are enclosed with round, square, or figure parenthesis respectively.
+
 ```
 (null true 1_234 'Hello')
-(div
-  ((id 'doc') (class 'container'))
-  (h1 'Document')
-  (p 'This is some document')
-)
 ```
 
 ### Call
 
-Call is a type which specifies function call and is presented by symbol followed by list:
+Call is a type which specifies function call and is presented by symbol followed by a list:
 
 ```
 print('Hello world')
@@ -76,11 +74,21 @@ Calls could be chained:
 
 ```
 curry(print 'Hello, %s')('World')
+; or
+print('Hello, %s' ?)('World')
+```
+
+Lists could be mixed:
+```
+div{class: ('badge' 'badge-round' 'badge-red')}(
+  p('Users count: ' 1)
+)
 ```
 
 ### Comment
 
-Comments is a line of text prepended with semicolon `;`. Comments end with new line.
+Comment is a line of text prepended with a semicolon `;`. Comment ends with new line char `\n`.
+
 ```
 ; Hi! I'm a comment. I can help you to describe your program
 ```

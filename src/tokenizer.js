@@ -1,12 +1,16 @@
-const {Token} = require('./types');
+const {Token, Source} = require('./types');
 
-function createTokenizerState({offset={line:1, pos:0}} = {}) {
+function createTokenizerState({
+  offset = {line:1, pos:0},
+  source = new Source(':'),
+} = {}) {
   return {
     line: offset.line,
     pos: offset.pos,
     index: 0,
     substate: null,
     tokens: [],
+    source: source,
   };
 }
 
@@ -25,18 +29,25 @@ const T_SYMBOL = 'symbol';
 const T_STRING = 'string';
 const T_COMMENT = 'comment';
 const T_PAREN = 'paren';
-// const T_EOF = 'eof';
 
 const EOF = '\0';
-const OPEN_PAREN = '(';
-const CLOSE_PAREN = ')';
+const ROUND_PAREN_LEFT = '(';
+const ROUND_PAREN_RIGHT = ')';
+const SQUARE_PAREN_LEFT = '[';
+const SQUARE_PAREN_RIGHT = ']';
+const FIGURE_PAREN_LEFT = '{';
+const FIGURE_PAREN_RIGHT = '}';
 const NL = '\n';
 const SPACE = ' ';
 const COMMENT_START = ';';
 const STRING_START = '\'';
 const NON_SYMBOL = [
-  OPEN_PAREN,
-  CLOSE_PAREN,
+  ROUND_PAREN_LEFT,
+  ROUND_PAREN_RIGHT,
+  SQUARE_PAREN_LEFT,
+  SQUARE_PAREN_RIGHT,
+  FIGURE_PAREN_LEFT,
+  FIGURE_PAREN_RIGHT,
   NL,
   SPACE,
   COMMENT_START,
@@ -45,13 +56,11 @@ const NON_SYMBOL = [
 ];
 const ESCAPE_START = '\\';
 
-function isWhiteSpace(char) {
-  return char === NL || char === SPACE;
-}
-
 function unescapeSymbol(char) {
   switch (char) {
-  case OPEN_PAREN:
+  case ROUND_PAREN_LEFT:
+  case SQUARE_PAREN_LEFT:
+  case FIGURE_PAREN_LEFT:
   case COMMENT_START:
   case SPACE:
   case STRING_START:
@@ -76,6 +85,7 @@ function unescape(v) {
 /* eslint-disable max-statements */
 /* eslint-disable max-depth */
 function tokenize(state, str, isLast = true) {
+  let source = state.source;
   let line = state.line;
   let pos = state.pos;
   let i = 0;
@@ -84,7 +94,7 @@ function tokenize(state, str, isLast = true) {
     str += '\0';
   }
 
-  let needIncrease = false;
+  let hasNewLine = false;
   let {substate} = state;
   const tokens = [];
 
@@ -101,6 +111,7 @@ function tokenize(state, str, isLast = true) {
           line,
           pos,
         },
+        source,
       ));
     }
     else {
@@ -120,6 +131,7 @@ function tokenize(state, str, isLast = true) {
         value,
         {index, line, pos},
         end,
+        source,
       ));
     }
   };
@@ -135,7 +147,7 @@ function tokenize(state, str, isLast = true) {
   const endState = () => {
     newToken(
       substate.type,
-      substate.value
+      substate.value,
     );
     substate = null;
   };
@@ -144,10 +156,10 @@ function tokenize(state, str, isLast = true) {
   for (; i < str.length; i++) {
     const char = str[i];
 
-    if (needIncrease) {
+    if (hasNewLine) {
       line += 1;
       pos = 0;
-      needIncrease = false;
+      hasNewLine = false;
     }
     else {
       pos += 1;
@@ -155,31 +167,40 @@ function tokenize(state, str, isLast = true) {
 
     const isNewLine = (char === NL);
     if (isNewLine) {
-      needIncrease = true;
+      hasNewLine = true;
     }
 
     charLoop:
     while (true) {
       if (! substate) {
         // Parse from root
-        if (char === OPEN_PAREN) {
-          newToken(T_PAREN, OPEN_PAREN);
+        switch (char) {
+        case ROUND_PAREN_LEFT:
+        case ROUND_PAREN_RIGHT:
+        case SQUARE_PAREN_LEFT:
+        case SQUARE_PAREN_RIGHT:
+        case FIGURE_PAREN_LEFT:
+        case FIGURE_PAREN_RIGHT: {
+          newToken(T_PAREN, char);
+          break;
         }
-        else if (char === CLOSE_PAREN) {
-          newToken(T_PAREN, CLOSE_PAREN);
-        }
-        else if (char === EOF) {
-          // SKIP token
-        }
-        else if (char === COMMENT_START) {
+        case COMMENT_START: {
           startState(T_COMMENT);
+          break;
         }
-        else if (char === STRING_START) {
+        case STRING_START: {
           startState(T_STRING);
           substate.charsEaten = 1;
+          break;
         }
-        else if (! isWhiteSpace(char)) {
+        case EOF:
+        case NL:
+        case SPACE: {
+          break;
+        }
+        default: {
           startState(T_SYMBOL, char);
+        }
         }
         continue scanLoop;
       }

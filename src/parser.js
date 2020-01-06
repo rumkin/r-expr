@@ -5,6 +5,9 @@ const {
   SymbolLiteral,
   CallExpression,
   ListExpression,
+  RoundListExpression,
+  SquareListExpression,
+  FigureListExpression,
 } = require('./types');
 
 function createParserState(ast = new Program()) {
@@ -33,6 +36,59 @@ function parse(state, tokens) {
     stack: [], // Stack should be empty
     tokens, // Handled tokens should be equal tokens input
   };
+}
+
+function isParenLeft(value) {
+  switch (value) {
+  case '(':
+  case '[':
+  case '{':
+    return true;
+  default:
+    return false;
+  }
+}
+
+function isParenRight(value) {
+  switch (value) {
+  case ')':
+  case ']':
+  case '}':
+    return true;
+  default:
+    return false;
+  }
+}
+
+function getListExpression(paren) {
+  switch (paren) {
+  case '(':
+  case ')': {
+    return RoundListExpression;
+  }
+  case '[':
+  case ']': {
+    return SquareListExpression;
+  }
+  case '{':
+  case '}': {
+    return FigureListExpression;
+  }
+  }
+}
+
+function isMatchingParen(node, token) {
+  const ctor = getListExpression(token.value);
+
+  if (node instanceof ListExpression) {
+    return node instanceof ctor;
+  }
+  else if (node instanceof CallExpression) {
+    return node.list instanceof ctor;
+  }
+  else {
+    return false;
+  }
 }
 
 /* eslint-disable max-depth */
@@ -65,10 +121,10 @@ function parseStream(state, newTokens) {
       nodes.push(node);
     }
     else if (stackNode.type === 'CallExpression') {
-      stackNode.params.push(node);
+      stackNode.list.items.push(node);
     }
     else {
-      stackNode.elements.push(node);
+      stackNode.items.push(node);
     }
   }
 
@@ -77,7 +133,7 @@ function parseStream(state, newTokens) {
       return nodes.pop();
     }
     else if (stackNode.type === 'CallExpression') {
-      return stackNode.params.pop();
+      return stackNode.list.items.pop();
     }
     else {
       return stackNode.items.pop();
@@ -103,7 +159,7 @@ function parseStream(state, newTokens) {
 
         if (
           isNeighbours(prev, token) &&
-          (prev.type !== 'paren' || prev.value !== '(')
+          (prev.type !== 'paren' || ! isParenLeft(prev.value))
         ) {
           throw new Error(`Unexpected 'symbol' at ${token.loc.start}`);
         }
@@ -135,9 +191,9 @@ function parseStream(state, newTokens) {
       break;
     }
     case 'paren': {
-      if (token.value === '(') {
+      if (isParenLeft(token.value)) {
         if (! hasPrevToken()) {
-          const node = new ListExpression([], token.loc);
+          const node = new (getListExpression(token.value))([], token.loc);
           commitNode(node);
           break;
         }
@@ -149,23 +205,23 @@ function parseStream(state, newTokens) {
         ) {
           if (prev.type === 'symbol') {
             const lastNode = popNode();
-            const node = new CallExpression(lastNode, [], lastNode.loc);
+            const node = new CallExpression(lastNode, new (getListExpression(token.value))([], token.loc), lastNode.loc);
 
             commitNode(node);
             break;
           }
           else if (prev.type === 'paren') {
-            if (prev.value === ')') {
+            if (isParenRight(prev.value)) {
               const lastNode = popNode();
               if (lastNode.type !== 'CallExpression') {
                 throw new Error(`Unexpected 'paren' at ${token.loc.start}`);
               }
 
-              const node = new CallExpression(lastNode, [], lastNode.loc);
+              const node = new CallExpression(lastNode, new (getListExpression(token.value))([], token.loc), lastNode.loc);
               commitNode(node);
             }
             else {
-              const node = new ListExpression([], token.loc);
+              const node = new (getListExpression(token.value))([], token.loc);
               commitNode(node);
             }
             break;
@@ -175,13 +231,17 @@ function parseStream(state, newTokens) {
           }
         }
         else {
-          const node = new ListExpression([], token.loc);
+          const node = new (getListExpression(token.value))([], token.loc);
           commitNode(node);
         }
       }
       else {
         if (! stackNode) {
-          throw new Error(`Unexpected token 'paren' at ${token.loc.start}`);
+          throw new Error(`Unexpected token 'paren' (${token.value}) at ${token.loc.start}`);
+        }
+
+        if (! isMatchingParen(stackNode, token)) {
+          throw new Error(`Unexpeted token 'paren' ("${token.value}") at ${token.loc.start}`);
         }
 
         stackNode.loc = stackNode.loc.setEnd(token.loc.end);

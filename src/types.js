@@ -63,61 +63,86 @@ class SymbolLiteral extends AstNode {
 }
 
 class CallExpression extends AstNode {
-  constructor(callee, params, location) {
+  constructor(callee, list, location) {
     super('CallExpression');
 
     this.callee = callee;
-    this.params = params || [];
+    this.list = list;
     this.loc = location;
   }
 
   clone() {
     return new this.constructor(
       this.callee.clone(),
-      this.params.map((node) => node.clone()),
+      this.list.clone(),
       this.loc
     );
   }
 }
 
 class ListExpression extends AstNode {
-  constructor(elements, location) {
-    super('ListExpression');
+  constructor(type, items, location) {
+    super(type);
 
-    this.elements = elements || [];
+    this.items = items;
     this.loc = location;
   }
 
   clone() {
     return new this.constructor(
-      this.elements.map((node) => node.clone()),
+      this.items.map((node) => node.clone()),
       this.loc
     );
   }
 }
 
+class RoundListExpression extends ListExpression {
+  constructor(items, location) {
+    super('RoundListExpression', items || [], location);
+  }
+}
+
+class SquareListExpression extends ListExpression {
+  constructor(items, location) {
+    super('SquareListExpression', items || [], location);
+  }
+}
+
+class FigureListExpression extends ListExpression {
+  constructor(items, location) {
+    super('FigureListExpression', items || [], location);
+  }
+}
+
+class Source {
+  constructor(filename) {
+    this.filename = filename;
+  }
+}
+
 class Token {
-  constructor(type, value, start, end) {
+  constructor(type, value, start, end, source) {
     this.type = type;
     this.value = value;
-    this.loc = new Location(start, end);
+    this.loc = new Location(start, end, source);
   }
 }
 
 class Location {
-  constructor(start, end) {
+  constructor(start, end, source) {
     this.start = new Cursor(start.line, start.pos, start.index);
     this.end = new Cursor(end.line, end.pos, end.index);
+    this.source = source;
 
     Object.freeze(this);
   }
 
   setStart(start) {
-    return new this.constructor(start, this.end);
+    return new this.constructor(start, this.end, this.source);
   }
 
   setEnd(end) {
-    return new this.constructor(this.start, end);
+    return new this.constructor(this.start, end, this.source);
   }
 }
 
@@ -141,6 +166,10 @@ exports.SymbolLiteral = SymbolLiteral;
 exports.StringLiteral = StringLiteral;
 exports.CallExpression = CallExpression;
 exports.ListExpression = ListExpression;
+exports.RoundListExpression = RoundListExpression;
+exports.SquareListExpression = SquareListExpression;
+exports.FigureListExpression = FigureListExpression;
 exports.Token = Token;
 exports.Location = Location;
+exports.Source = Source;
 exports.Cursor = Cursor;

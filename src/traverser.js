@@ -14,10 +14,12 @@ function traverseNode(node, parent, visitor) {
     return;
   case 'CallExpression':
     traverseNode(node.callee, node, visitor);
-    traverseArray(node.params, node, visitor);
+    traverseArray(node.list.items, node, visitor);
     return;
-  case 'ListExpression':
-    traverseArray(node.elements, node, visitor);
+  case 'RoundListExpression':
+  case 'SquareListExpression':
+  case 'FigureListExpression':
+    traverseArray(node.items, node, visitor);
     return;
   case 'SymbolLiteral':
   case 'StringLiteral':
