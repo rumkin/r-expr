@@ -1,27 +1,17 @@
-const {
-  Program,
-  CallExpression,
-} = require('./types');
-
 function transform(ast, visitor) {
-  return transformNode(ast, {
-    parent: null,
-    path: [],
-  }, visitor);
+  return transformNode(ast, new Context(null), visitor);
 }
 
 class Visitor {
   constructor(parent, path, replaceWith) {
     this.parent = parent;
-    this.path = path;
     this.replaceWith = replaceWith;
   }
 }
 
 class Context {
-  constructor(parent, path) {
+  constructor(parent) {
     this.parent = parent;
-    this.path = path;
   }
 }
 
@@ -31,13 +21,8 @@ function transformNode(node, ctx, visitor) {
   if (node.type in visitor) {
     visitor[node.type](new Visitor(
       ctx.parent,
-      ctx.path,
       (newNode, stop = false) => {
         node = newNode;
-        ctx = new Context(
-          ctx.parent,
-          [...ctx.path.slice(0, -1), node.type],
-        );
 
         if (stop) {
           transformChildren = false;
@@ -60,7 +45,7 @@ function transformChildNodes(node, ctx, visitor) {
     const children = traverseChildren(node, node.body, ctx, visitor);
 
     if (node.body !== children) {
-      return new Program(children);
+      return new node.constructor(children);
     }
     break;
   }
@@ -68,7 +53,7 @@ function transformChildNodes(node, ctx, visitor) {
     const children = traverseChildren(node.list, node.list.items, new Context(node.list), visitor);
 
     if (node.list.items !== children) {
-      return new CallExpression(
+      return new node.constructor(
         node.callee,
         new node.list.constructor(children, node.list.loc),
         node.loc,
@@ -97,7 +82,7 @@ function traverseChildren(node, children, ctx, visitor) {
 
   children.forEach(
     (childNode, i) => {
-      const newNode = transformNode(childNode, new Context(node, [...ctx.path, childNode.type]), visitor);
+      const newNode = transformNode(childNode, new Context(node), visitor);
       if (newNode !== childNode) {
         hasChanges = true;
       }
@@ -106,33 +91,6 @@ function traverseChildren(node, children, ctx, visitor) {
   );
   return hasChanges ? newChildren : children;
 }
-
-// function programModifier(node, children) {
-//   node.body.push(...children);
-// }
-//
-// function callModifier(node, children) {
-//   node.list.items.push(...children);
-// }
-//
-// function listModifier(node, children) {
-//   node.items.push(...children);
-// }
-
-// function getModifierByType(type) {
-//   switch (type) {
-//   case 'Program':
-//     return programModifier;
-//   case 'CallExpression':
-//     return callModifier;
-//   case 'RoundListExpression':
-//   case 'SquareListExpression':
-//   case 'FigureListExpression':
-//     return listModifier;
-//   default:
-//     throw new Error(`Modifier for type "${type}" not defined`);
-//   }
-// }
 
 function isContainerNode(node) {
   return [

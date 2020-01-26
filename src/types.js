@@ -9,7 +9,10 @@ class AstNode {
   }
 }
 
-class Program extends AstNode {
+class ParentNode extends AstNode {}
+class LeafNode extends AstNode {}
+
+class Program extends ParentNode {
   constructor(body = []) {
     super('Program');
 
@@ -23,7 +26,7 @@ class Program extends AstNode {
   }
 }
 
-class CommentLiteral extends AstNode {
+class CommentLiteral extends LeafNode {
   constructor(text, location) {
     super('CommentLiteral');
 
@@ -36,7 +39,7 @@ class CommentLiteral extends AstNode {
   }
 }
 
-class StringLiteral extends AstNode {
+class StringLiteral extends LeafNode {
   constructor(value, location) {
     super('StringLiteral');
 
@@ -49,7 +52,7 @@ class StringLiteral extends AstNode {
   }
 }
 
-class SymbolLiteral extends AstNode {
+class SymbolLiteral extends LeafNode {
   constructor(value, location) {
     super('SymbolLiteral');
 
@@ -62,7 +65,7 @@ class SymbolLiteral extends AstNode {
   }
 }
 
-class CallExpression extends AstNode {
+class CallExpression extends ParentNode {
   constructor(callee, list, location) {
     super('CallExpression');
 
@@ -80,7 +83,7 @@ class CallExpression extends AstNode {
   }
 }
 
-class ListExpression extends AstNode {
+class ListExpression extends ParentNode {
   constructor(type, items, location) {
     super(type);
 
@@ -160,6 +163,7 @@ class Cursor {
 }
 
 exports.AstNode = AstNode;
+exports.ParentNode = ParentNode;
 exports.Program = Program;
 exports.CommentLiteral = CommentLiteral;
 exports.SymbolLiteral = SymbolLiteral;
