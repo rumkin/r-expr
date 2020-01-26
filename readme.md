@@ -1,12 +1,12 @@
 # R-Expressions
 
-R-expressions or Rich Expressions is a markup language inspired by S-
-and M-expressions. It's toolkit written with JavaScript. Toolkit contains:
+R-expressions or Rich Expressions is a language inspired by S- and M-expressions.
+The toolkit is written with JavaScript and contains:
 
 * ✅ Tokenizer,
 * ✅ Parser,
-* ✅ Tree traverser,
-* ✅ Tree transformer.
+* ✅ Traverser,
+* ✅ Transformer.
 
 Tokenizer and parser support streaming mode with byte-per-byte input and could
 be used for REPL creation.
@@ -17,7 +17,7 @@ R-expressions could be used for:
 
 1. Lisp-like programming languages creation.
 2. Language prototyping.
-3. Transpiler creation.
+3. Transpilation.
 
 ## Example
 
@@ -49,35 +49,38 @@ http://github.com/rumkin/r-expressions
 <node>
 ```
 
-
 ### String
 
-String is value surrounded by single quotes `'`. Single quote within a string should be escaped with a backslash `\`. And backslash could be escaped by another backslash `\\`.
+String is a sequence of characters surrounded by single quote `'`.
+Single quote within a string should be escaped with a backslash `\`.
+And backslash could be escaped by another backslash `\\`. String could contain new lines.
 
 ```
 'This is a string'
 'Hello! I\'m a string too.'
+'This is a multiline
+string'
 ```
 
 ### Lists
 
-List is a type which can contain other types symbols, strings, lists, and calls:
+List is a type which can contain other types: symbols, strings, lists, and calls:
 
 R-expressions has three types of lists round, square, and figure, this lists
 are enclosed with round, square, or figure parenthesis respectively. They can be used to separate semantic.
 
 ```
-; Tuple
+; Round parenthesis list
 (null true 1_234 'Hello')
 
-; Object
-{ x: 1 y: 2 z: 3 }
+; Figure parenthesis list
+{x: 1 y: 2 z: 3}
 
-; Array
-[ 1 2 3 4 5 ]
+; Square parenthesis list
+[1 2 3 4 5]
 
 ; Mixed
-[ (1 2 {a}) ]
+[a (1 {2} 3) b]
 
 ; Empty
 ()
@@ -94,7 +97,7 @@ Call is a type which specifies function call and is presented by symbol followed
 print('Hello world')
 ```
 
-Calls could be chained:
+Calls could be chained, if there is no space between lists in a sequence:
 
 ```
 curry(print 'Hello, %s')('World')
@@ -105,7 +108,7 @@ print('Hello, %s' ?)('World')
 Lists types could be mixed for different semantics creation:
 ```
 ; HTML like code
-div{class: ('badge' 'badge-round' 'badge-red')}(
+div{class: !['badge' 'badge-round' 'badge-red']}(
   p('Users count: 1')
 )
 ```
